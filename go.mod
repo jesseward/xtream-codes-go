@@ -1,3 +1,3 @@
-module github.com/pbergman/xtream-codes-go
+module github.com/jesseward/xtream-codes-go
 
 go 1.19
