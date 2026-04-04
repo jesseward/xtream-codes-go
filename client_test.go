@@ -32,12 +32,7 @@ func TestApiClient_Flow(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config, err := NewApiClientConfig(server.URL, "testuser", "testpass")
-	if err != nil {
-		t.Fatalf("Failed to create config: %v", err)
-	}
-
-	client, err := NewApiClient(config, nil, nil, nil)
+	client, err := NewApiClient(server.URL, "testuser", "testpass")
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
@@ -67,12 +62,7 @@ func TestNewApiClient_LoginFail(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config, err := NewApiClientConfig(server.URL, "testuser", "testpass")
-	if err != nil {
-		t.Fatalf("Failed to create config: %v", err)
-	}
-
-	_, err = NewApiClient(config, nil, nil, nil)
+	_, err := NewApiClient(server.URL, "testuser", "testpass")
 	if err == nil {
 		t.Fatal("Expected error on failed login, got nil")
 	}

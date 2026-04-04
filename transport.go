@@ -13,7 +13,7 @@ import (
 
 type ApiTransport struct {
 	inner  http.RoundTripper
-	config ApiClientConfig
+	config *credentials
 	logger *slog.Logger
 	dumper io.Writer
 }
@@ -40,10 +40,10 @@ func (t *ApiTransport) update(request *http.Request, stopwatch *stopwatch) *http
 	loginInfo, _ := request.Context().Value(loginInfoKey).(*LoginInfo)
 
 	if loginInfo == nil {
-		query.Set("username", t.config.GetUsername())
-		query.Set("password", t.config.GetPassword())
-		request.URL.Scheme = t.config.GetHost().Scheme
-		request.URL.Host = t.config.GetHost().Host
+		query.Set("username", t.config.username)
+		query.Set("password", t.config.password)
+		request.URL.Scheme = t.config.host.Scheme
+		request.URL.Host = t.config.host.Host
 	} else {
 		query.Set("username", loginInfo.UserInfo.Username)
 		query.Set("password", loginInfo.UserInfo.Password)

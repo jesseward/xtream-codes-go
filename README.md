@@ -18,14 +18,7 @@ import (
 
 func main() {
 
-	config, err := xtream_codes.NewApiClientConfig("http://example.com", "username", "password")
-
-	if err != nil {
-		panic(err)
-	}
-
-	client, err := xtream_codes.NewApiClient(config, nil, nil, nil)
-
+	client, err := xtream_codes.NewApiClient("http://example.com", "username", "password")
 	if err != nil {
 		panic(err)
 	}

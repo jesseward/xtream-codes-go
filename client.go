@@ -20,32 +20,75 @@ const (
 	playerApi string = "player_api.php"
 )
 
-func NewApiClient(config ApiClientConfig, logger *slog.Logger, client *http.Client, dumper io.Writer) (*ApiClient, error) {
+type credentials struct {
+	host     *url.URL
+	username string
+	password string
+}
 
-	if logger == nil {
-		logger = slog.Default()
+type options struct {
+	logger *slog.Logger
+	client *http.Client
+	dumper io.Writer
+}
+
+type Option func(*options)
+
+func WithLogger(logger *slog.Logger) Option {
+	return func(o *options) {
+		o.logger = logger
+	}
+}
+
+func WithHTTPClient(client *http.Client) Option {
+	return func(o *options) {
+		o.client = client
+	}
+}
+
+func WithDumper(dumper io.Writer) Option {
+	return func(o *options) {
+		o.dumper = dumper
+	}
+}
+
+func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, error) {
+	uri, err := url.Parse(host)
+	if err != nil {
+		return nil, err
 	}
 
-	if client == nil {
-		client = &http.Client{}
+	o := options{
+		logger: slog.Default(),
+		client: &http.Client{},
 	}
 
-	var transport = client.Transport
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	var transport = o.client.Transport
 
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
 
-	client.Transport = &ApiTransport{
-		inner:  transport,
-		logger: logger,
-		dumper: dumper,
-		config: config,
+	creds := &credentials{
+		host:     uri,
+		username: username,
+		password: password,
 	}
 
-	var api = &ApiClient{client: client}
+	o.client.Transport = &ApiTransport{
+		inner:  transport,
+		logger: o.logger,
+		dumper: o.dumper,
+		config: creds,
+	}
 
-	if err := authenticate(context.Background(), api, logger); err != nil {
+	var api = &ApiClient{client: o.client}
+
+	if err := authenticate(context.Background(), api, o.logger); err != nil {
 		return nil, err
 	}
 
