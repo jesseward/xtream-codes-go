@@ -9,9 +9,9 @@ type LiveStream struct {
 	ModelBase
 	ModelStream
 
-	EpgChannelId      string   `json:"epg_channel_id"`
-	TvArchive         boolean  `json:"tv_archive"`
-	TvArchiveDuration nummeric `json:"tv_archive_duration"`
+	EpgChannelId      string  `json:"epg_channel_id"`
+	TvArchive         boolean `json:"tv_archive"`
+	TvArchiveDuration numeric `json:"tv_archive_duration"`
 }
 
 func (a *ApiClient) GetLiveCategories(ctx context.Context) ([]CategoryInterface, error) {

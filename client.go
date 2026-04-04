@@ -11,19 +11,24 @@ import (
 	"github.com/pbergman/logger"
 )
 
+type contextKey string
+
+const valuesKey contextKey = "values"
+const loginInfoKey contextKey = "loginInfo"
+
 const (
 	playerApi string = "player_api.php"
 )
 
 func NewApiClient(config ApiClientConfig, logger *logger.Logger, client *http.Client, dumper io.Writer) (*ApiClient, error) {
 
-	if nil == client {
+	if client == nil {
 		client = &http.Client{}
 	}
 
 	var transport = client.Transport
 
-	if nil == transport {
+	if transport == nil {
 		transport = http.DefaultTransport
 	}
 
@@ -39,8 +44,6 @@ func NewApiClient(config ApiClientConfig, logger *logger.Logger, client *http.Cl
 	if err := authenticate(context.Background(), api, logger); err != nil {
 		return nil, err
 	}
-
-	api.client.Transport.(*ApiTransport).loginInfo = api.loginInfo
 
 	return api, nil
 }
@@ -59,10 +62,14 @@ func (a *ApiClient) context(ctx context.Context, action string, params map[strin
 		values.Set(k, v)
 	}
 
-	return context.WithValue(ctx, "values", values)
+	return context.WithValue(ctx, valuesKey, values)
 }
 
 func (a *ApiClient) fetch(ctx context.Context, path string, data any) error {
+
+	if a.loginInfo != nil {
+		ctx = context.WithValue(ctx, loginInfoKey, a.loginInfo)
+	}
 
 	request, err := http.NewRequestWithContext(ctx, "GET", path, nil)
 
@@ -75,12 +82,11 @@ func (a *ApiClient) fetch(ctx context.Context, path string, data any) error {
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode >= 300 || response.StatusCode < 200 {
 		return fmt.Errorf("unexpected status code (%d) returned for '%s'", response.StatusCode, response.Request.URL.RequestURI())
 	}
-
-	defer response.Body.Close()
 
 	if err := json.NewDecoder(response.Body).Decode(data); err != nil {
 		return err

@@ -81,29 +81,29 @@ func (s *Series) UnmarshalJSON(data []byte) error {
 }
 
 type Season struct {
-	Name         string   `json:"name"`
-	EpisodeCount nummeric `json:"episode_count"`
-	Overview     string   `json:"overview"`
-	AirDate      string   `json:"air_date"`
-	Cover        string   `json:"cover"`
-	CoverTmdb    string   `json:"cover_tmdb"`
-	SeasonNumber nummeric `json:"season_number"`
-	CoverBig     string   `json:"cover_big"`
-	ReleaseDate  string   `json:"releaseDate"`
-	Duration     string   `json:"duration"`
+	Name         string  `json:"name"`
+	EpisodeCount numeric `json:"episode_count"`
+	Overview     string  `json:"overview"`
+	AirDate      string  `json:"air_date"`
+	Cover        string  `json:"cover"`
+	CoverTmdb    string  `json:"cover_tmdb"`
+	SeasonNumber numeric `json:"season_number"`
+	CoverBig     string  `json:"cover_big"`
+	ReleaseDate  string  `json:"releaseDate"`
+	Duration     string  `json:"duration"`
 }
 
 type EpisodeInfo struct {
-	AirDate      string   `json:"air_date"`
-	Crew         string   `json:"crew"`
-	Rating       float    `json:"rating"`
-	Id           nummeric `json:"id"`
-	MovieImage   string   `json:"movie_image"`
-	DurationSecs int      `json:"duration_secs"`
-	Duration     string   `json:"duration"`
-	Bitrate      int      `json:"bitrate"`
-	Video        *Video   `json:"video"`
-	Audio        *Video   `json:"audio"`
+	AirDate      string  `json:"air_date"`
+	Crew         string  `json:"crew"`
+	Rating       float   `json:"rating"`
+	Id           numeric `json:"id"`
+	MovieImage   string  `json:"movie_image"`
+	DurationSecs int     `json:"duration_secs"`
+	Duration     string  `json:"duration"`
+	Bitrate      int     `json:"bitrate"`
+	Video        *Video  `json:"video"`
+	Audio        *Video  `json:"audio"`
 }
 
 type Episode struct {

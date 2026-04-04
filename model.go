@@ -3,6 +3,7 @@ package xtream_codes_go
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -30,19 +31,23 @@ type ModelVideo struct {
 	Tmdb         varchar `json:"tmdb"`
 }
 
-type nummeric int
+type numeric int
 
-func (n *nummeric) UnmarshalJSON(data []byte) error {
+func (n *numeric) UnmarshalJSON(data []byte) error {
 	var x interface{}
 	var v int
 
 	if err := json.Unmarshal(data, &x); err != nil {
-		return nil
+		return err
 	}
 
 	switch y := x.(type) {
 	case string:
-		v, _ = strconv.Atoi(y)
+		var err error
+		v, err = strconv.Atoi(y)
+		if err != nil {
+			return err
+		}
 	case int8:
 		v = int(y)
 	case int16:
@@ -57,9 +62,11 @@ func (n *nummeric) UnmarshalJSON(data []byte) error {
 		v = int(y)
 	case float64:
 		v = int(y)
+	default:
+		return fmt.Errorf("unexpected type %T for numeric", y)
 	}
 
-	*n = nummeric(v)
+	*n = numeric(v)
 
 	return nil
 }
@@ -71,25 +78,34 @@ func (b *boolean) UnmarshalJSON(data []byte) error {
 	var v bool
 
 	if err := json.Unmarshal(data, &x); err != nil {
-		return nil
+		return err
 	}
 
 	switch y := x.(type) {
 	case string:
-		v, _ = strconv.ParseBool(y)
+		var err error
+		v, err = strconv.ParseBool(y)
+		if err != nil {
+			return err
+		}
 	case int8:
+		v = y != 0
 	case int16:
+		v = y != 0
 	case int32:
+		v = y != 0
 	case int64:
+		v = y != 0
 	case int:
-		if y == 1 {
-			v = true
-		}
+		v = y != 0
 	case float32:
+		v = y > 0
 	case float64:
-		if y > 0 {
-			v = true
-		}
+		v = y > 0
+	case bool:
+		v = y
+	default:
+		return fmt.Errorf("unexpected type %T for boolean", y)
 	}
 
 	*b = boolean(v)
@@ -103,7 +119,7 @@ func (v *varchar) UnmarshalJSON(data []byte) error {
 	var x interface{}
 
 	if err := json.Unmarshal(data, &x); err != nil {
-		return nil
+		return err
 	}
 
 	switch y := x.(type) {
@@ -117,10 +133,14 @@ func (v *varchar) UnmarshalJSON(data []byte) error {
 		*v = varchar(strconv.Itoa(int(y)))
 	case int64:
 		*v = varchar(strconv.Itoa(int(y)))
+	case int:
+		*v = varchar(strconv.Itoa(y))
 	case float32:
-		*v = varchar(strconv.Itoa(int(y)))
+		*v = varchar(strconv.FormatFloat(float64(y), 'f', -1, 32))
 	case float64:
-		*v = varchar(strconv.Itoa(int(y)))
+		*v = varchar(strconv.FormatFloat(y, 'f', -1, 64))
+	default:
+		return fmt.Errorf("unexpected type %T for varchar", y)
 	}
 
 	return nil
@@ -134,15 +154,17 @@ func (f *float) UnmarshalJSON(data []byte) error {
 	data = bytes.Replace(data, []byte{','}, []byte{'.'}, -1)
 
 	if err := json.Unmarshal(data, &x); err != nil {
-		return nil
+		return err
 	}
 
 	switch y := x.(type) {
 	case string:
 		if len(y) > 0 {
-			if x, err := strconv.ParseFloat(strings.TrimSpace(y), 32); err == nil {
-				*f = float(x)
+			x, err := strconv.ParseFloat(strings.TrimSpace(y), 32)
+			if err != nil {
+				return err
 			}
+			*f = float(x)
 		}
 	case int8:
 		*f = float(y)
@@ -152,11 +174,14 @@ func (f *float) UnmarshalJSON(data []byte) error {
 		*f = float(y)
 	case int64:
 		*f = float(y)
+	case int:
+		*f = float(y)
 	case float32:
 		*f = float(y)
 	case float64:
 		*f = float(y)
-
+	default:
+		return fmt.Errorf("unexpected type %T for float", y)
 	}
 
 	return nil
