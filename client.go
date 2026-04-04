@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pbergman/logger"
+	"log/slog"
 )
 
 type contextKey string
@@ -20,7 +20,11 @@ const (
 	playerApi string = "player_api.php"
 )
 
-func NewApiClient(config ApiClientConfig, logger *logger.Logger, client *http.Client, dumper io.Writer) (*ApiClient, error) {
+func NewApiClient(config ApiClientConfig, logger *slog.Logger, client *http.Client, dumper io.Writer) (*ApiClient, error) {
+
+	if logger == nil {
+		logger = slog.Default()
+	}
 
 	if client == nil {
 		client = &http.Client{}

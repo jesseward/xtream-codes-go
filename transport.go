@@ -2,8 +2,8 @@ package xtream_codes_go
 
 import (
 	"fmt"
-	"github.com/pbergman/logger"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptrace"
 	"net/http/httputil"
@@ -14,7 +14,7 @@ import (
 type ApiTransport struct {
 	inner  http.RoundTripper
 	config ApiClientConfig
-	logger *logger.Logger
+	logger *slog.Logger
 	dumper io.Writer
 }
 
@@ -140,9 +140,12 @@ func (t *ApiTransport) RoundTrip(request *http.Request) (*http.Response, error) 
 		return nil, err
 	}
 
-	if nil != t.logger {
-
-		t.logger.Debug(logger.Message(fmt.Sprintf("%s %s %s %d", request.Method, t.getRequestUri(*request.URL), request.Proto, resp.StatusCode), timer.getContext()))
+	if t.logger != nil {
+		var args []any
+		for k, v := range timer.getContext() {
+			args = append(args, k, v)
+		}
+		t.logger.Debug(fmt.Sprintf("%s %s %s %d", request.Method, t.getRequestUri(*request.URL), request.Proto, resp.StatusCode), args...)
 	}
 
 	if nil != t.dumper {
