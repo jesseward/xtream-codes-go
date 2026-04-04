@@ -3,7 +3,7 @@ package xtream_codes_go
 import (
 	"context"
 	"fmt"
-	"github.com/pbergman/logger"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -50,7 +50,7 @@ func (a *ApiClient) Login(ctx context.Context) (*LoginInfo, error) {
 	return info, nil
 }
 
-func authenticate(ctx context.Context, client *ApiClient, logger *logger.Logger) error {
+func authenticate(ctx context.Context, client *ApiClient, logger *slog.Logger) error {
 	info, err := client.Login(ctx)
 
 	if err != nil {

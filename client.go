@@ -8,39 +8,89 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pbergman/logger"
+	"log/slog"
 )
+
+type contextKey string
+
+const valuesKey contextKey = "values"
+const loginInfoKey contextKey = "loginInfo"
 
 const (
 	playerApi string = "player_api.php"
 )
 
-func NewApiClient(config ApiClientConfig, logger *logger.Logger, client *http.Client, dumper io.Writer) (*ApiClient, error) {
+type credentials struct {
+	host     *url.URL
+	username string
+	password string
+}
 
-	if nil == client {
-		client = &http.Client{}
+type options struct {
+	logger *slog.Logger
+	client *http.Client
+	dumper io.Writer
+}
+
+type Option func(*options)
+
+func WithLogger(logger *slog.Logger) Option {
+	return func(o *options) {
+		o.logger = logger
 	}
+}
 
-	var transport = client.Transport
-
-	if nil == transport {
-		transport = http.DefaultTransport
+func WithHTTPClient(client *http.Client) Option {
+	return func(o *options) {
+		o.client = client
 	}
+}
 
-	client.Transport = &ApiTransport{
-		inner:  transport,
-		logger: logger,
-		dumper: dumper,
-		config: config,
+func WithDumper(dumper io.Writer) Option {
+	return func(o *options) {
+		o.dumper = dumper
 	}
+}
 
-	var api = &ApiClient{client: client}
-
-	if err := authenticate(context.Background(), api, logger); err != nil {
+func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, error) {
+	uri, err := url.Parse(host)
+	if err != nil {
 		return nil, err
 	}
 
-	api.client.Transport.(*ApiTransport).loginInfo = api.loginInfo
+	o := options{
+		logger: slog.Default(),
+		client: &http.Client{},
+	}
+
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	var transport = o.client.Transport
+
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+
+	creds := &credentials{
+		host:     uri,
+		username: username,
+		password: password,
+	}
+
+	o.client.Transport = &ApiTransport{
+		inner:  transport,
+		logger: o.logger,
+		dumper: o.dumper,
+		config: creds,
+	}
+
+	var api = &ApiClient{client: o.client}
+
+	if err := authenticate(context.Background(), api, o.logger); err != nil {
+		return nil, err
+	}
 
 	return api, nil
 }
@@ -59,10 +109,14 @@ func (a *ApiClient) context(ctx context.Context, action string, params map[strin
 		values.Set(k, v)
 	}
 
-	return context.WithValue(ctx, "values", values)
+	return context.WithValue(ctx, valuesKey, values)
 }
 
 func (a *ApiClient) fetch(ctx context.Context, path string, data any) error {
+
+	if a.loginInfo != nil {
+		ctx = context.WithValue(ctx, loginInfoKey, a.loginInfo)
+	}
 
 	request, err := http.NewRequestWithContext(ctx, "GET", path, nil)
 
@@ -75,12 +129,11 @@ func (a *ApiClient) fetch(ctx context.Context, path string, data any) error {
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode >= 300 || response.StatusCode < 200 {
 		return fmt.Errorf("unexpected status code (%d) returned for '%s'", response.StatusCode, response.Request.URL.RequestURI())
 	}
-
-	defer response.Body.Close()
 
 	if err := json.NewDecoder(response.Body).Decode(data); err != nil {
 		return err

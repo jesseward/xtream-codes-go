@@ -2,8 +2,8 @@ package xtream_codes_go
 
 import (
 	"fmt"
-	"github.com/pbergman/logger"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptrace"
 	"net/http/httputil"
@@ -12,20 +12,19 @@ import (
 )
 
 type ApiTransport struct {
-	inner     http.RoundTripper
-	config    ApiClientConfig
-	logger    *logger.Logger
-	dumper    io.Writer
-	loginInfo *LoginInfo
+	inner  http.RoundTripper
+	config *credentials
+	logger *slog.Logger
+	dumper io.Writer
 }
 
 func (t *ApiTransport) update(request *http.Request, stopwatch *stopwatch) *http.Request {
 	var query = request.URL.Query()
 
-	if value, ok := request.Context().Value("values").(url.Values); ok {
+	if value, ok := request.Context().Value(valuesKey).(url.Values); ok {
 		if len(query) > 0 {
 			for key, values := range value {
-				if false == query.Has(key) {
+				if !query.Has(key) {
 					query[key] = values
 				}
 			}
@@ -38,16 +37,18 @@ func (t *ApiTransport) update(request *http.Request, stopwatch *stopwatch) *http
 		request.URL.Path = "/" + request.URL.Path
 	}
 
-	if nil == t.loginInfo {
-		query.Set("username", t.config.GetUsername())
-		query.Set("password", t.config.GetPassword())
-		request.URL.Scheme = t.config.GetHost().Scheme
-		request.URL.Host = t.config.GetHost().Host
+	loginInfo, _ := request.Context().Value(loginInfoKey).(*LoginInfo)
+
+	if loginInfo == nil {
+		query.Set("username", t.config.username)
+		query.Set("password", t.config.password)
+		request.URL.Scheme = t.config.host.Scheme
+		request.URL.Host = t.config.host.Host
 	} else {
-		query.Set("username", t.loginInfo.UserInfo.Username)
-		query.Set("password", t.loginInfo.UserInfo.Password)
-		request.URL.Scheme = t.loginInfo.ServerInfo.ServerProtocol
-		request.URL.Host = t.loginInfo.ServerInfo.Url
+		query.Set("username", loginInfo.UserInfo.Username)
+		query.Set("password", loginInfo.UserInfo.Password)
+		request.URL.Scheme = loginInfo.ServerInfo.ServerProtocol
+		request.URL.Host = loginInfo.ServerInfo.Url
 	}
 
 	request.URL.RawQuery = query.Encode()
@@ -117,6 +118,8 @@ func (t *ApiTransport) dump(out []byte, prefix string) {
 
 func (t *ApiTransport) RoundTrip(request *http.Request) (*http.Response, error) {
 
+	request = request.Clone(request.Context())
+
 	var timer *stopwatch
 
 	if nil != t.logger {
@@ -137,9 +140,12 @@ func (t *ApiTransport) RoundTrip(request *http.Request) (*http.Response, error) 
 		return nil, err
 	}
 
-	if nil != t.logger {
-
-		t.logger.Debug(logger.Message(fmt.Sprintf("%s %s %s %d", request.Method, t.getRequestUri(*request.URL), request.Proto, resp.StatusCode), timer.getContext()))
+	if t.logger != nil {
+		var args []any
+		for k, v := range timer.getContext() {
+			args = append(args, k, v)
+		}
+		t.logger.Debug(fmt.Sprintf("%s %s %s %d", request.Method, t.getRequestUri(*request.URL), request.Proto, resp.StatusCode), args...)
 	}
 
 	if nil != t.dumper {
