@@ -21,18 +21,6 @@ type ApiTransport struct {
 func (t *ApiTransport) update(request *http.Request, stopwatch *stopwatch) *http.Request {
 	var query = request.URL.Query()
 
-	if value, ok := request.Context().Value(valuesKey).(url.Values); ok {
-		if len(query) > 0 {
-			for key, values := range value {
-				if !query.Has(key) {
-					query[key] = values
-				}
-			}
-		} else {
-			query = value
-		}
-	}
-
 	if '/' != request.URL.Path[0] {
 		request.URL.Path = "/" + request.URL.Path
 	}

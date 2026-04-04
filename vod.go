@@ -67,7 +67,7 @@ func (a *ApiClient) GetVodStreams(ctx context.Context, category int) ([]*VodStre
 		values = map[string]string{"category_id": strconv.Itoa(category)}
 	}
 
-	if err := a.fetch(a.context(ctx, "get_vod_streams", values), playerApi, &streams); err != nil {
+	if err := a.fetch(ctx, "get_vod_streams", values, playerApi, &streams); err != nil {
 		return nil, err
 	}
 
@@ -81,7 +81,7 @@ func (a *ApiClient) GetVodInfo(ctx context.Context, id int) (*VodInfo, error) {
 		"vod_id": strconv.Itoa(id),
 	}
 
-	if err := a.fetch(a.context(ctx, "get_vod_info", values), playerApi, &seriesInfo); err != nil {
+	if err := a.fetch(ctx, "get_vod_info", values, playerApi, &seriesInfo); err != nil {
 		return nil, err
 	}
 

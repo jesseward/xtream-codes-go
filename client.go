@@ -13,7 +13,6 @@ import (
 
 type contextKey string
 
-const valuesKey contextKey = "values"
 const loginInfoKey contextKey = "loginInfo"
 
 const (
@@ -100,19 +99,7 @@ type ApiClient struct {
 	loginInfo *LoginInfo
 }
 
-func (a *ApiClient) context(ctx context.Context, action string, params map[string]string) context.Context {
-	var values = make(url.Values)
-
-	values.Set("action", action)
-
-	for k, v := range params {
-		values.Set(k, v)
-	}
-
-	return context.WithValue(ctx, valuesKey, values)
-}
-
-func (a *ApiClient) fetch(ctx context.Context, path string, data any) error {
+func (a *ApiClient) fetch(ctx context.Context, action string, params map[string]string, path string, data any) error {
 
 	if a.loginInfo != nil {
 		ctx = context.WithValue(ctx, loginInfoKey, a.loginInfo)
@@ -123,6 +110,15 @@ func (a *ApiClient) fetch(ctx context.Context, path string, data any) error {
 	if err != nil {
 		return err
 	}
+
+	query := request.URL.Query()
+	if action != "" {
+		query.Set("action", action)
+	}
+	for k, v := range params {
+		query.Set(k, v)
+	}
+	request.URL.RawQuery = query.Encode()
 
 	response, err := a.client.Do(request)
 

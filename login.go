@@ -43,7 +43,7 @@ func (a *ApiClient) Login(ctx context.Context) (*LoginInfo, error) {
 
 	var info *LoginInfo
 
-	if err := a.fetch(ctx, playerApi, &info); err != nil {
+	if err := a.fetch(ctx, "", nil, playerApi, &info); err != nil {
 		return nil, err
 	}
 

@@ -26,7 +26,7 @@ func (a *ApiClient) GetLiveStreams(ctx context.Context, category int) ([]*LiveSt
 		values = map[string]string{"category_id": strconv.Itoa(category)}
 	}
 
-	if err := a.fetch(a.context(ctx, "get_live_streams", values), playerApi, &streams); err != nil {
+	if err := a.fetch(ctx, "get_live_streams", values, playerApi, &streams); err != nil {
 		return nil, err
 	}
 
