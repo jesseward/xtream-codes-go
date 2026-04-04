@@ -88,7 +88,7 @@ func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, 
 
 	var api = &ApiClient{client: o.client}
 
-	if err := authenticate(context.Background(), api, o.logger); err != nil {
+	if err := api.authenticate(context.Background(), o.logger); err != nil {
 		return nil, err
 	}
 

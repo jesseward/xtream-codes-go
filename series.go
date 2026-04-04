@@ -7,20 +7,48 @@ import (
 	"strconv"
 )
 
+type BackdropPath []string
+
+func (b *BackdropPath) UnmarshalJSON(data []byte) error {
+	var x interface{}
+	if err := json.Unmarshal(data, &x); err != nil {
+		return err
+	}
+
+	switch y := x.(type) {
+	case string:
+		*b = []string{y}
+	case []string:
+		*b = y
+	case []interface{}:
+		*b = make([]string, 0)
+		for _, v := range y {
+			if s, ok := v.(string); ok {
+				*b = append(*b, s)
+			} else if v != nil {
+				return fmt.Errorf("expecting string got %#v", v)
+			}
+		}
+	default:
+		return fmt.Errorf("invalid BackdropPath type %#v", x)
+	}
+	return nil
+}
+
 type Series struct {
 	ModelBase
 	ModelVideo
-	SeriesId       int      `json:"series_id"`
-	Cover          string   `json:"cover"`
-	Plot           string   `json:"plot"`
-	Cast           string   `json:"cast"`
-	Director       string   `json:"director"`
-	Genre          string   `json:"genre"`
-	ReleaseDate    string   `json:"releaseDate"`
-	LastModified   string   `json:"last_modified"`
-	BackdropPath   []string `json:"backdrop_path"`
-	YoutubeTrailer string   `json:"youtube_trailer"`
-	EpisodeRunTime int      `json:"episode_run_time"`
+	SeriesId       int          `json:"series_id"`
+	Cover          string       `json:"cover"`
+	Plot           string       `json:"plot"`
+	Cast           string       `json:"cast"`
+	Director       string       `json:"director"`
+	Genre          string       `json:"genre"`
+	ReleaseDate    string       `json:"releaseDate"`
+	LastModified   string       `json:"last_modified"`
+	BackdropPath   BackdropPath `json:"backdrop_path"`
+	YoutubeTrailer string       `json:"youtube_trailer"`
+	EpisodeRunTime int          `json:"episode_run_time"`
 }
 
 func (s *Series) UnmarshalJSON(data []byte) error {
@@ -28,17 +56,17 @@ func (s *Series) UnmarshalJSON(data []byte) error {
 		ModelBase
 		ModelVideo
 
-		SeriesId       int         `json:"series_id"`
-		Cover          string      `json:"cover"`
-		Plot           string      `json:"plot"`
-		Cast           string      `json:"cast"`
-		Director       string      `json:"director"`
-		Genre          string      `json:"genre"`
-		ReleaseDate    string      `json:"releaseDate"`
-		LastModified   string      `json:"last_modified"`
-		BackdropPath   interface{} `json:"backdrop_path,string"`
-		YoutubeTrailer string      `json:"youtube_trailer"`
-		EpisodeRunTime int         `json:"episode_run_time,string"`
+		SeriesId       int          `json:"series_id"`
+		Cover          string       `json:"cover"`
+		Plot           string       `json:"plot"`
+		Cast           string       `json:"cast"`
+		Director       string       `json:"director"`
+		Genre          string       `json:"genre"`
+		ReleaseDate    string       `json:"releaseDate"`
+		LastModified   string       `json:"last_modified"`
+		BackdropPath   BackdropPath `json:"backdrop_path"`
+		YoutubeTrailer string       `json:"youtube_trailer"`
+		EpisodeRunTime int          `json:"episode_run_time,string"`
 	}
 
 	if err := json.Unmarshal(data, &o); err != nil {
@@ -56,26 +84,7 @@ func (s *Series) UnmarshalJSON(data []byte) error {
 	s.LastModified = o.LastModified
 	s.YoutubeTrailer = o.YoutubeTrailer
 	s.EpisodeRunTime = o.EpisodeRunTime
-
-	switch x := o.BackdropPath.(type) {
-	case string:
-		s.BackdropPath = []string{x}
-	case []string:
-		s.BackdropPath = x
-	case []interface{}:
-		s.BackdropPath = make([]string, 0)
-		for i, c := 0, len(x); i < c; i++ {
-			if v, ok := x[i].(string); ok {
-				s.BackdropPath = append(s.BackdropPath, v)
-			} else {
-				if nil != x[i] {
-					return fmt.Errorf("expecting string got %#v", x[i])
-				}
-			}
-		}
-	default:
-		return fmt.Errorf("invalid BackdropPath type %#v", o.BackdropPath)
-	}
+	s.BackdropPath = o.BackdropPath
 
 	return nil
 }

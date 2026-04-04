@@ -50,11 +50,11 @@ func (a *ApiClient) Login(ctx context.Context) (*LoginInfo, error) {
 	return info, nil
 }
 
-func authenticate(ctx context.Context, client *ApiClient, logger *slog.Logger) error {
-	info, err := client.Login(ctx)
+func (a *ApiClient) authenticate(ctx context.Context, logger *slog.Logger) error {
+	info, err := a.Login(ctx)
 
 	if err != nil {
-		return &Error{message: "failed to login", prev: err}
+		return fmt.Errorf("failed to login: %w", err)
 	}
 
 	if nil != logger {
@@ -70,11 +70,10 @@ func authenticate(ctx context.Context, client *ApiClient, logger *slog.Logger) e
 	}
 
 	if info.UserInfo.Status != "Active" {
-		return &Error{message: "user account not active"}
+		return fmt.Errorf("user account not active")
 	}
 
-	client.loginInfo = info
+	a.loginInfo = info
 
 	return nil
-
 }
