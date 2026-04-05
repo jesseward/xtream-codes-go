@@ -78,7 +78,11 @@ func (t *ApiTransport) dump(out []byte, prefix string) {
 	var lines = strings.Split(string(out), "\r\n")
 
 	for i, c := 0, len(lines); i < c; i++ {
-		_, _ = t.dumper.Write([]byte(prefix + lines[i] + "\n"))
+		if _, err := t.dumper.Write([]byte(prefix + lines[i] + "\n")); err != nil {
+			if t.logger != nil {
+				t.logger.Error("failed to write to dumper", "error", err)
+			}
+		}
 	}
 }
 
