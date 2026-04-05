@@ -42,7 +42,7 @@ func (s *base64string) UnmarshalJSON(data []byte) error {
 	if err == nil {
 		*s = base64string(out)
 	} else {
-		*s = base64string(data)
+		*s = base64string(x)
 	}
 
 	return nil
