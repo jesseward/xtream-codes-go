@@ -88,7 +88,7 @@ func (a *ApiClient) GetVodInfo(ctx context.Context, id int) (*VodInfo, error) {
 	return seriesInfo, nil
 }
 
-func (a *ApiClient) GetVodCategories(ctx context.Context) ([]CategoryInterface, error) {
+func (a *ApiClient) GetVodCategories(ctx context.Context) ([]*Category, error) {
 	return a.getCategories(ctx, CategoryTypeVod)
 }
 

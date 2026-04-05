@@ -14,7 +14,7 @@ type LiveStream struct {
 	TvArchiveDuration numeric `json:"tv_archive_duration"`
 }
 
-func (a *ApiClient) GetLiveCategories(ctx context.Context) ([]CategoryInterface, error) {
+func (a *ApiClient) GetLiveCategories(ctx context.Context) ([]*Category, error) {
 	return a.getCategories(ctx, CategoryTypeLive)
 }
 

@@ -116,7 +116,7 @@ func (a *ApiClient) GetSeriesInfo(ctx context.Context, id int) (*SeriesInfo, err
 	return seriesInfo, nil
 }
 
-func (a *ApiClient) GetSeriesCategories(ctx context.Context) ([]CategoryInterface, error) {
+func (a *ApiClient) GetSeriesCategories(ctx context.Context) ([]*Category, error) {
 	return a.getCategories(ctx, CategoryTypeSeries)
 }
 

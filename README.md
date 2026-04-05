@@ -34,7 +34,7 @@ func main() {
 	}
 
 	for _, category := range categories {
-		fmt.Printf("%-4d %s", category.GetId(), category.GetName())
+		fmt.Printf("%-4d %s", category.Id, category.Name)
 	}
 }
 ```
