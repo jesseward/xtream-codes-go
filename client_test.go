@@ -37,6 +37,10 @@ func TestApiClient_Flow(t *testing.T) {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 
+	if err := client.Connect(context.Background()); err != nil {
+		t.Fatalf("Failed to connect client: %v", err)
+	}
+
 	if client == nil {
 		t.Fatal("Expected client to be non-nil")
 	}
@@ -62,8 +66,12 @@ func TestNewApiClient_LoginFail(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := NewApiClient(server.URL, "testuser", "testpass")
-	if err == nil {
+	client, err := NewApiClient(server.URL, "testuser", "testpass")
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	if err := client.Connect(context.Background()); err == nil {
 		t.Fatal("Expected error on failed login, got nil")
 	}
 }

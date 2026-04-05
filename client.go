@@ -7,17 +7,15 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"log/slog"
 )
 
 type contextKey string
 
-const valuesKey contextKey = "values"
-const loginInfoKey contextKey = "loginInfo"
-
 const (
-	playerApi string = "player_api.php"
+	defaultPlayerApi string = "player_api.php"
 )
 
 type credentials struct {
@@ -27,9 +25,10 @@ type credentials struct {
 }
 
 type options struct {
-	logger *slog.Logger
-	client *http.Client
-	dumper io.Writer
+	logger  *slog.Logger
+	client  *http.Client
+	dumper  io.Writer
+	apiPath string
 }
 
 type Option func(*options)
@@ -52,6 +51,12 @@ func WithDumper(dumper io.Writer) Option {
 	}
 }
 
+func WithAPIPath(apiPath string) Option {
+	return func(o *options) {
+		o.apiPath = apiPath
+	}
+}
+
 func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, error) {
 	uri, err := url.Parse(host)
 	if err != nil {
@@ -59,8 +64,9 @@ func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, 
 	}
 
 	o := options{
-		logger: slog.Default(),
-		client: &http.Client{},
+		logger:  slog.Default(),
+		client:  &http.Client{},
+		apiPath: defaultPlayerApi,
 	}
 
 	for _, opt := range opts {
@@ -79,17 +85,18 @@ func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, 
 		password: password,
 	}
 
+	var api = &ApiClient{
+		client:  o.client,
+		config:  creds,
+		apiPath: o.apiPath,
+		logger:  o.logger,
+	}
+
 	o.client.Transport = &ApiTransport{
 		inner:  transport,
 		logger: o.logger,
 		dumper: o.dumper,
-		config: creds,
-	}
-
-	var api = &ApiClient{client: o.client}
-
-	if err := api.authenticate(context.Background(), o.logger); err != nil {
-		return nil, err
+		api:    api,
 	}
 
 	return api, nil
@@ -97,32 +104,57 @@ func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, 
 
 type ApiClient struct {
 	client    *http.Client
+	mu        sync.RWMutex
 	loginInfo *LoginInfo
+	config    *credentials
+	apiPath   string
+	logger    *slog.Logger
 }
 
-func (a *ApiClient) context(ctx context.Context, action string, params map[string]string) context.Context {
-	var values = make(url.Values)
-
-	values.Set("action", action)
-
-	for k, v := range params {
-		values.Set(k, v)
-	}
-
-	return context.WithValue(ctx, valuesKey, values)
+func (a *ApiClient) getLoginInfo() *LoginInfo {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.loginInfo
 }
 
-func (a *ApiClient) fetch(ctx context.Context, path string, data any) error {
+func (a *ApiClient) setLoginInfo(info *LoginInfo) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.loginInfo = info
+}
 
-	if a.loginInfo != nil {
-		ctx = context.WithValue(ctx, loginInfoKey, a.loginInfo)
-	}
+func (a *ApiClient) fetch(ctx context.Context, action string, params map[string]string, path string, data any) error {
 
 	request, err := http.NewRequestWithContext(ctx, "GET", path, nil)
 
 	if err != nil {
 		return err
 	}
+
+	query := request.URL.Query()
+	if action != "" {
+		query.Set("action", action)
+	}
+	for k, v := range params {
+		query.Set(k, v)
+	}
+
+	loginInfo := a.getLoginInfo()
+	if loginInfo == nil {
+		query.Set("username", a.config.username)
+		query.Set("password", a.config.password)
+		request.URL.Scheme = a.config.host.Scheme
+		request.URL.Host = a.config.host.Host
+		request.URL.Path = a.config.host.Path + "/" + path
+	} else {
+		query.Set("username", loginInfo.UserInfo.Username)
+		query.Set("password", loginInfo.UserInfo.Password)
+		request.URL.Scheme = loginInfo.ServerInfo.ServerProtocol
+		request.URL.Host = loginInfo.ServerInfo.Url
+		request.URL.Path = "/" + path
+	}
+
+	request.URL.RawQuery = query.Encode()
 
 	response, err := a.client.Do(request)
 
@@ -143,13 +175,17 @@ func (a *ApiClient) fetch(ctx context.Context, path string, data any) error {
 }
 
 func (a *ApiClient) streamUrl(stream string, id int, extension string) string {
+	info := a.getLoginInfo()
+	if info == nil {
+		return ""
+	}
 	return fmt.Sprintf(
 		"%s://%s/%s/%s/%s/%d.%s",
-		a.loginInfo.ServerInfo.ServerProtocol,
-		a.loginInfo.ServerInfo.Url,
+		info.ServerInfo.ServerProtocol,
+		info.ServerInfo.Url,
 		stream,
-		a.loginInfo.UserInfo.Username,
-		a.loginInfo.UserInfo.Password,
+		info.UserInfo.Username,
+		info.UserInfo.Password,
 		id,
 		extension,
 	)

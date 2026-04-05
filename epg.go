@@ -42,7 +42,7 @@ func (s *base64string) UnmarshalJSON(data []byte) error {
 	if err == nil {
 		*s = base64string(out)
 	} else {
-		*s = base64string(data)
+		*s = base64string(x)
 	}
 
 	return nil
@@ -65,27 +65,27 @@ type EpgListing struct {
 	NowPlaying boolean `json:"now_playing"`
 	HasArchive boolean `json:"has_archive"`
 }
-type EpgListening struct {
+type EpgListings struct {
 	EpgListings []*EpgListing `json:"epg_listings"`
 }
 
-func (a *ApiClient) GetSimpleDataTable(ctx context.Context, streamId int) (*EpgListening, error) {
-	var egpInfo *EpgListening
+func (a *ApiClient) GetSimpleDataTable(ctx context.Context, streamId int) (*EpgListings, error) {
+	var egpInfo *EpgListings
 	var values = map[string]string{"stream_id": strconv.Itoa(streamId)}
 
-	if err := a.fetch(a.context(ctx, "get_simple_data_table", values), playerApi, &egpInfo); err != nil {
+	if err := a.fetch(ctx, "get_simple_data_table", values, a.apiPath, &egpInfo); err != nil {
 		return nil, err
 	}
 
 	return egpInfo, nil
 }
 
-func (a *ApiClient) GetShortEpg(ctx context.Context, streamId int) (*EpgListening, error) {
+func (a *ApiClient) GetShortEpg(ctx context.Context, streamId int) (*EpgListings, error) {
 
-	var egpInfo *EpgListening
+	var egpInfo *EpgListings
 	var values = map[string]string{"stream_id": strconv.Itoa(streamId)}
 
-	if err := a.fetch(a.context(ctx, "get_short_epg", values), playerApi, &egpInfo); err != nil {
+	if err := a.fetch(ctx, "get_short_epg", values, a.apiPath, &egpInfo); err != nil {
 		return nil, err
 	}
 

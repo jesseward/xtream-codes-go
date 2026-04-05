@@ -43,18 +43,25 @@ func (s *stopwatch) GetEvent(name string) *stopwatchEvent {
 }
 
 type stopwatchEvent struct {
+	mu    sync.RWMutex
 	start time.Time
 	stop  time.Time
 }
 
 func (s *stopwatchEvent) Start() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.start = time.Now()
 }
 
 func (s *stopwatchEvent) Stop() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.stop = time.Now()
 }
 
 func (s *stopwatchEvent) String() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.stop.Sub(s.start).String()
 }

@@ -13,46 +13,12 @@ import (
 
 type ApiTransport struct {
 	inner  http.RoundTripper
-	config *credentials
+	api    *ApiClient
 	logger *slog.Logger
 	dumper io.Writer
 }
 
 func (t *ApiTransport) update(request *http.Request, stopwatch *stopwatch) *http.Request {
-	var query = request.URL.Query()
-
-	if value, ok := request.Context().Value(valuesKey).(url.Values); ok {
-		if len(query) > 0 {
-			for key, values := range value {
-				if !query.Has(key) {
-					query[key] = values
-				}
-			}
-		} else {
-			query = value
-		}
-	}
-
-	if '/' != request.URL.Path[0] {
-		request.URL.Path = "/" + request.URL.Path
-	}
-
-	loginInfo, _ := request.Context().Value(loginInfoKey).(*LoginInfo)
-
-	if loginInfo == nil {
-		query.Set("username", t.config.username)
-		query.Set("password", t.config.password)
-		request.URL.Scheme = t.config.host.Scheme
-		request.URL.Host = t.config.host.Host
-	} else {
-		query.Set("username", loginInfo.UserInfo.Username)
-		query.Set("password", loginInfo.UserInfo.Password)
-		request.URL.Scheme = loginInfo.ServerInfo.ServerProtocol
-		request.URL.Host = loginInfo.ServerInfo.Url
-	}
-
-	request.URL.RawQuery = query.Encode()
-
 	if nil != stopwatch {
 		var ctx = httptrace.WithClientTrace(request.Context(), &httptrace.ClientTrace{
 			DNSStart: func(info httptrace.DNSStartInfo) {
@@ -112,7 +78,11 @@ func (t *ApiTransport) dump(out []byte, prefix string) {
 	var lines = strings.Split(string(out), "\r\n")
 
 	for i, c := 0, len(lines); i < c; i++ {
-		_, _ = t.dumper.Write([]byte(prefix + lines[i] + "\n"))
+		if _, err := t.dumper.Write([]byte(prefix + lines[i] + "\n")); err != nil {
+			if t.logger != nil {
+				t.logger.Error("failed to write to dumper", "error", err)
+			}
+		}
 	}
 }
 

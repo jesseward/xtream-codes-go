@@ -48,45 +48,7 @@ type Series struct {
 	LastModified   string       `json:"last_modified"`
 	BackdropPath   BackdropPath `json:"backdrop_path"`
 	YoutubeTrailer string       `json:"youtube_trailer"`
-	EpisodeRunTime int          `json:"episode_run_time"`
-}
-
-func (s *Series) UnmarshalJSON(data []byte) error {
-	var o struct {
-		ModelBase
-		ModelVideo
-
-		SeriesId       int          `json:"series_id"`
-		Cover          string       `json:"cover"`
-		Plot           string       `json:"plot"`
-		Cast           string       `json:"cast"`
-		Director       string       `json:"director"`
-		Genre          string       `json:"genre"`
-		ReleaseDate    string       `json:"releaseDate"`
-		LastModified   string       `json:"last_modified"`
-		BackdropPath   BackdropPath `json:"backdrop_path"`
-		YoutubeTrailer string       `json:"youtube_trailer"`
-		EpisodeRunTime int          `json:"episode_run_time,string"`
-	}
-
-	if err := json.Unmarshal(data, &o); err != nil {
-		return err
-	}
-
-	s.ModelBase = o.ModelBase
-	s.ModelVideo = o.ModelVideo
-	s.SeriesId = o.SeriesId
-	s.Cover = o.Cover
-	s.Plot = o.Plot
-	s.Cast = o.Cast
-	s.Genre = o.Genre
-	s.ReleaseDate = o.ReleaseDate
-	s.LastModified = o.LastModified
-	s.YoutubeTrailer = o.YoutubeTrailer
-	s.EpisodeRunTime = o.EpisodeRunTime
-	s.BackdropPath = o.BackdropPath
-
-	return nil
+	EpisodeRunTime int          `json:"episode_run_time,string"`
 }
 
 type Season struct {
@@ -137,7 +99,7 @@ func (a *ApiClient) GetSeries(ctx context.Context, category int) ([]*Series, err
 		values = map[string]string{"category_id": strconv.Itoa(category)}
 	}
 
-	if err := a.fetch(a.context(ctx, "get_series", values), playerApi, &series); err != nil {
+	if err := a.fetch(ctx, "get_series", values, a.apiPath, &series); err != nil {
 		return nil, err
 	}
 
@@ -147,22 +109,22 @@ func (a *ApiClient) GetSeries(ctx context.Context, category int) ([]*Series, err
 func (a *ApiClient) GetSeriesInfo(ctx context.Context, id int) (*SeriesInfo, error) {
 	var seriesInfo *SeriesInfo
 
-	if err := a.fetch(a.context(ctx, "get_series_info", map[string]string{"series_id": strconv.Itoa(id)}), playerApi, &seriesInfo); err != nil {
+	if err := a.fetch(ctx, "get_series_info", map[string]string{"series_id": strconv.Itoa(id)}, a.apiPath, &seriesInfo); err != nil {
 		return nil, err
 	}
 
 	return seriesInfo, nil
 }
 
-func (a *ApiClient) GetSeriesCategories(ctx context.Context) ([]CategoryInterface, error) {
+func (a *ApiClient) GetSeriesCategories(ctx context.Context) ([]*Category, error) {
 	return a.getCategories(ctx, CategoryTypeSeries)
 }
 
-// GetSeriesUri build serie url
+// GetSeriesUri build series url
 //
-// var serie *Serie
+// var series *Series
 // ...
-// client.GetSeriesUri(serie.Id, serie.ContainerExtension)
+// client.GetSeriesUri(series.Id, series.ContainerExtension)
 func (a *ApiClient) GetSeriesUri(id int, extension string) string {
 	return a.streamUrl("series", id, extension)
 }

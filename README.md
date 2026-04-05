@@ -23,6 +23,10 @@ func main() {
 		panic(err)
 	}
 
+	if err := client.Connect(context.Background()); err != nil {
+		panic(err)
+	}
+
 	categories, err := client.GetLiveCategories(context.Background())
 
 	if err != nil {
@@ -30,7 +34,7 @@ func main() {
 	}
 
 	for _, category := range categories {
-		fmt.Printf("%-4d %s", category.GetId(), category.GetName())
+		fmt.Printf("%-4d %s", category.Id, category.Name)
 	}
 }
 ```

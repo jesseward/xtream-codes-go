@@ -14,7 +14,7 @@ type LiveStream struct {
 	TvArchiveDuration numeric `json:"tv_archive_duration"`
 }
 
-func (a *ApiClient) GetLiveCategories(ctx context.Context) ([]CategoryInterface, error) {
+func (a *ApiClient) GetLiveCategories(ctx context.Context) ([]*Category, error) {
 	return a.getCategories(ctx, CategoryTypeLive)
 }
 
@@ -26,7 +26,7 @@ func (a *ApiClient) GetLiveStreams(ctx context.Context, category int) ([]*LiveSt
 		values = map[string]string{"category_id": strconv.Itoa(category)}
 	}
 
-	if err := a.fetch(a.context(ctx, "get_live_streams", values), playerApi, &streams); err != nil {
+	if err := a.fetch(ctx, "get_live_streams", values, a.apiPath, &streams); err != nil {
 		return nil, err
 	}
 
