@@ -120,11 +120,11 @@ func (a *ApiClient) GetSeriesCategories(ctx context.Context) ([]*Category, error
 	return a.getCategories(ctx, CategoryTypeSeries)
 }
 
-// GetSeriesUri build serie url
+// GetSeriesUri build series url
 //
-// var serie *Serie
+// var series *Series
 // ...
-// client.GetSeriesUri(serie.Id, serie.ContainerExtension)
+// client.GetSeriesUri(series.Id, series.ContainerExtension)
 func (a *ApiClient) GetSeriesUri(id int, extension string) string {
 	return a.streamUrl("series", id, extension)
 }
