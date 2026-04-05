@@ -16,6 +16,8 @@ func (b *BackdropPath) UnmarshalJSON(data []byte) error {
 	}
 
 	switch y := x.(type) {
+	case nil:
+		*b = nil
 	case string:
 		*b = []string{y}
 	case []string:
