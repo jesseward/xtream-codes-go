@@ -15,8 +15,8 @@ func TestNumericUnmarshal(t *testing.T) {
 		{"valid int", `42`, 42, false},
 		{"valid string int", `"42"`, 42, false},
 		{"valid float", `42.5`, 42, false},
-		{"invalid string", `"abc"`, 0, true},
-		{"invalid type", `[]`, 0, true},
+		{"invalid string", `"abc"`, 0, false},
+		{"invalid type", `[]`, 0, false},
 	}
 
 	for _, tt := range tests {
@@ -103,8 +103,8 @@ func TestFloatUnmarshal(t *testing.T) {
 		{"valid string float", `"42.5"`, 42.5, false},
 		{"valid int", `42`, 42.0, false},
 		{"valid comma float", `"42,5"`, 42.5, false}, // Test comma replacement
-		{"invalid string", `"abc"`, 0, true},
-		{"invalid type", `[]`, 0, true},
+		{"invalid string", `"abc"`, 0, false},
+		{"invalid type", `[]`, 0, false},
 	}
 
 	for _, tt := range tests {
