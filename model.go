@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 )
@@ -45,7 +46,9 @@ func (n *numeric) UnmarshalJSON(data []byte) error {
 
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
-		return fmt.Errorf("unexpected value %q for numeric: %w", string(data), err)
+		slog.Warn("unexpected value for numeric, defaulting to 0", "value", string(data), "error", err)
+		*n = 0
+		return nil
 	}
 
 	*n = numeric(int(f))
@@ -132,7 +135,9 @@ func (f *float) UnmarshalJSON(data []byte) error {
 
 	val, err := strconv.ParseFloat(s, 32)
 	if err != nil {
-		return fmt.Errorf("unexpected value %q for float: %w", string(data), err)
+		slog.Warn("unexpected value for float, defaulting to 0", "value", string(data), "error", err)
+		*f = 0
+		return nil
 	}
 
 	*f = float(val)
