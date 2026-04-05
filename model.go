@@ -34,155 +34,107 @@ type ModelVideo struct {
 type numeric int
 
 func (n *numeric) UnmarshalJSON(data []byte) error {
-	var x interface{}
-	var v int
-
-	if err := json.Unmarshal(data, &x); err != nil {
-		return err
+	if len(data) == 0 || string(data) == "null" {
+		return nil
 	}
 
-	switch y := x.(type) {
-	case string:
-		var err error
-		v, err = strconv.Atoi(y)
-		if err != nil {
-			return err
-		}
-	case int8:
-		v = int(y)
-	case int16:
-		v = int(y)
-	case int32:
-		v = int(y)
-	case int64:
-		v = int(y)
-	case int:
-		v = y
-	case float32:
-		v = int(y)
-	case float64:
-		v = int(y)
-	default:
-		return fmt.Errorf("unexpected type %T for numeric", y)
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
 	}
 
-	*n = numeric(v)
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return fmt.Errorf("unexpected value %q for numeric: %w", string(data), err)
+	}
 
+	*n = numeric(int(f))
 	return nil
 }
 
 type boolean bool
 
 func (b *boolean) UnmarshalJSON(data []byte) error {
-	var x interface{}
-	var v bool
-
-	if err := json.Unmarshal(data, &x); err != nil {
-		return err
+	if len(data) == 0 || string(data) == "null" {
+		return nil
 	}
 
-	switch y := x.(type) {
-	case string:
-		var err error
-		v, err = strconv.ParseBool(y)
-		if err != nil {
-			return err
-		}
-	case int8:
-		v = y != 0
-	case int16:
-		v = y != 0
-	case int32:
-		v = y != 0
-	case int64:
-		v = y != 0
-	case int:
-		v = y != 0
-	case float32:
-		v = y > 0
-	case float64:
-		v = y > 0
-	case bool:
-		v = y
-	default:
-		return fmt.Errorf("unexpected type %T for boolean", y)
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
 	}
 
-	*b = boolean(v)
+	if s == "true" {
+		*b = true
+		return nil
+	}
+	if s == "false" {
+		*b = false
+		return nil
+	}
 
-	return nil
+	f, err := strconv.ParseFloat(s, 64)
+	if err == nil {
+		*b = boolean(f > 0)
+		return nil
+	}
+
+	return fmt.Errorf("unexpected value %q for boolean", string(data))
 }
 
 type varchar string
 
 func (v *varchar) UnmarshalJSON(data []byte) error {
-	var x interface{}
-
-	if err := json.Unmarshal(data, &x); err != nil {
-		return err
+	if len(data) == 0 || string(data) == "null" {
+		return nil
 	}
 
-	switch y := x.(type) {
-	case string:
-		*v = varchar(y)
-	case int8:
-		*v = varchar(strconv.Itoa(int(y)))
-	case int16:
-		*v = varchar(strconv.Itoa(int(y)))
-	case int32:
-		*v = varchar(strconv.Itoa(int(y)))
-	case int64:
-		*v = varchar(strconv.Itoa(int(y)))
-	case int:
-		*v = varchar(strconv.Itoa(y))
-	case float32:
-		*v = varchar(strconv.FormatFloat(float64(y), 'f', -1, 32))
-	case float64:
-		*v = varchar(strconv.FormatFloat(y, 'f', -1, 64))
-	default:
-		return fmt.Errorf("unexpected type %T for varchar", y)
+	if data[0] == '"' {
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		*v = varchar(s)
+		return nil
 	}
 
-	return nil
+	var f float64
+	if err := json.Unmarshal(data, &f); err == nil {
+		if f == float64(int64(f)) {
+			*v = varchar(strconv.FormatInt(int64(f), 10))
+		} else {
+			*v = varchar(strconv.FormatFloat(f, 'f', -1, 64))
+		}
+		return nil
+	}
+
+	return fmt.Errorf("unexpected value %q for varchar", string(data))
 }
 
 type float float32
 
 func (f *float) UnmarshalJSON(data []byte) error {
-	var x interface{}
+	if len(data) == 0 || string(data) == "null" {
+		return nil
+	}
 
 	data = bytes.Replace(data, []byte{','}, []byte{'.'}, -1)
 
-	if err := json.Unmarshal(data, &x); err != nil {
-		return err
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
 	}
 
-	switch y := x.(type) {
-	case string:
-		if len(y) > 0 {
-			x, err := strconv.ParseFloat(strings.TrimSpace(y), 32)
-			if err != nil {
-				return err
-			}
-			*f = float(x)
-		}
-	case int8:
-		*f = float(y)
-	case int16:
-		*f = float(y)
-	case int32:
-		*f = float(y)
-	case int64:
-		*f = float(y)
-	case int:
-		*f = float(y)
-	case float32:
-		*f = float(y)
-	case float64:
-		*f = float(y)
-	default:
-		return fmt.Errorf("unexpected type %T for float", y)
+	s = strings.TrimSpace(s)
+	if len(s) == 0 {
+		return nil
 	}
 
+	val, err := strconv.ParseFloat(s, 32)
+	if err != nil {
+		return fmt.Errorf("unexpected value %q for float: %w", string(data), err)
+	}
+
+	*f = float(val)
 	return nil
 }
