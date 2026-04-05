@@ -48,45 +48,7 @@ type Series struct {
 	LastModified   string       `json:"last_modified"`
 	BackdropPath   BackdropPath `json:"backdrop_path"`
 	YoutubeTrailer string       `json:"youtube_trailer"`
-	EpisodeRunTime int          `json:"episode_run_time"`
-}
-
-func (s *Series) UnmarshalJSON(data []byte) error {
-	var o struct {
-		ModelBase
-		ModelVideo
-
-		SeriesId       int          `json:"series_id"`
-		Cover          string       `json:"cover"`
-		Plot           string       `json:"plot"`
-		Cast           string       `json:"cast"`
-		Director       string       `json:"director"`
-		Genre          string       `json:"genre"`
-		ReleaseDate    string       `json:"releaseDate"`
-		LastModified   string       `json:"last_modified"`
-		BackdropPath   BackdropPath `json:"backdrop_path"`
-		YoutubeTrailer string       `json:"youtube_trailer"`
-		EpisodeRunTime int          `json:"episode_run_time,string"`
-	}
-
-	if err := json.Unmarshal(data, &o); err != nil {
-		return err
-	}
-
-	s.ModelBase = o.ModelBase
-	s.ModelVideo = o.ModelVideo
-	s.SeriesId = o.SeriesId
-	s.Cover = o.Cover
-	s.Plot = o.Plot
-	s.Cast = o.Cast
-	s.Genre = o.Genre
-	s.ReleaseDate = o.ReleaseDate
-	s.LastModified = o.LastModified
-	s.YoutubeTrailer = o.YoutubeTrailer
-	s.EpisodeRunTime = o.EpisodeRunTime
-	s.BackdropPath = o.BackdropPath
-
-	return nil
+	EpisodeRunTime int          `json:"episode_run_time,string"`
 }
 
 type Season struct {
