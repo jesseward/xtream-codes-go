@@ -99,7 +99,7 @@ func (a *ApiClient) GetSeries(ctx context.Context, category int) ([]*Series, err
 		values = map[string]string{"category_id": strconv.Itoa(category)}
 	}
 
-	if err := a.fetch(ctx, "get_series", values, playerApi, &series); err != nil {
+	if err := a.fetch(ctx, "get_series", values, a.apiPath, &series); err != nil {
 		return nil, err
 	}
 
@@ -109,7 +109,7 @@ func (a *ApiClient) GetSeries(ctx context.Context, category int) ([]*Series, err
 func (a *ApiClient) GetSeriesInfo(ctx context.Context, id int) (*SeriesInfo, error) {
 	var seriesInfo *SeriesInfo
 
-	if err := a.fetch(ctx, "get_series_info", map[string]string{"series_id": strconv.Itoa(id)}, playerApi, &seriesInfo); err != nil {
+	if err := a.fetch(ctx, "get_series_info", map[string]string{"series_id": strconv.Itoa(id)}, a.apiPath, &seriesInfo); err != nil {
 		return nil, err
 	}
 

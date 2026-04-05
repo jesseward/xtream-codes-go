@@ -3,7 +3,6 @@ package xtream_codes_go
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 )
@@ -43,21 +42,21 @@ func (a *ApiClient) Login(ctx context.Context) (*LoginInfo, error) {
 
 	var info *LoginInfo
 
-	if err := a.fetch(ctx, "", nil, playerApi, &info); err != nil {
+	if err := a.fetch(ctx, "", nil, a.apiPath, &info); err != nil {
 		return nil, err
 	}
 
 	return info, nil
 }
 
-func (a *ApiClient) authenticate(ctx context.Context, logger *slog.Logger) error {
+func (a *ApiClient) Connect(ctx context.Context) error {
 	info, err := a.Login(ctx)
 
 	if err != nil {
 		return fmt.Errorf("failed to login: %w", err)
 	}
 
-	if nil != logger {
+	if nil != a.logger {
 
 		expires := time.Unix(int64(info.UserInfo.ExpDate), 0)
 
@@ -65,8 +64,8 @@ func (a *ApiClient) authenticate(ctx context.Context, logger *slog.Logger) error
 			expires = expires.In(loc)
 		}
 
-		logger.Debug(info.UserInfo.Message)
-		logger.Debug(fmt.Sprintf("account (status: %s expires: %s)", strings.ToLower(info.UserInfo.Status), expires))
+		a.logger.Debug(info.UserInfo.Message)
+		a.logger.Debug(fmt.Sprintf("account (status: %s expires: %s)", strings.ToLower(info.UserInfo.Status), expires))
 	}
 
 	if info.UserInfo.Status != "Active" {

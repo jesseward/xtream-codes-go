@@ -73,7 +73,7 @@ func (a *ApiClient) GetSimpleDataTable(ctx context.Context, streamId int) (*EpgL
 	var egpInfo *EpgListening
 	var values = map[string]string{"stream_id": strconv.Itoa(streamId)}
 
-	if err := a.fetch(ctx, "get_simple_data_table", values, playerApi, &egpInfo); err != nil {
+	if err := a.fetch(ctx, "get_simple_data_table", values, a.apiPath, &egpInfo); err != nil {
 		return nil, err
 	}
 
@@ -85,7 +85,7 @@ func (a *ApiClient) GetShortEpg(ctx context.Context, streamId int) (*EpgListenin
 	var egpInfo *EpgListening
 	var values = map[string]string{"stream_id": strconv.Itoa(streamId)}
 
-	if err := a.fetch(ctx, "get_short_epg", values, playerApi, &egpInfo); err != nil {
+	if err := a.fetch(ctx, "get_short_epg", values, a.apiPath, &egpInfo); err != nil {
 		return nil, err
 	}
 

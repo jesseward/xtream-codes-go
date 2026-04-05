@@ -15,7 +15,7 @@ import (
 type contextKey string
 
 const (
-	playerApi string = "player_api.php"
+	defaultPlayerApi string = "player_api.php"
 )
 
 type credentials struct {
@@ -25,9 +25,10 @@ type credentials struct {
 }
 
 type options struct {
-	logger *slog.Logger
-	client *http.Client
-	dumper io.Writer
+	logger  *slog.Logger
+	client  *http.Client
+	dumper  io.Writer
+	apiPath string
 }
 
 type Option func(*options)
@@ -50,15 +51,22 @@ func WithDumper(dumper io.Writer) Option {
 	}
 }
 
-func NewApiClient(ctx context.Context, host, username, password string, opts ...Option) (*ApiClient, error) {
+func WithAPIPath(apiPath string) Option {
+	return func(o *options) {
+		o.apiPath = apiPath
+	}
+}
+
+func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, error) {
 	uri, err := url.Parse(host)
 	if err != nil {
 		return nil, err
 	}
 
 	o := options{
-		logger: slog.Default(),
-		client: &http.Client{},
+		logger:  slog.Default(),
+		client:  &http.Client{},
+		apiPath: defaultPlayerApi,
 	}
 
 	for _, opt := range opts {
@@ -78,8 +86,10 @@ func NewApiClient(ctx context.Context, host, username, password string, opts ...
 	}
 
 	var api = &ApiClient{
-		client: o.client,
-		config: creds,
+		client:  o.client,
+		config:  creds,
+		apiPath: o.apiPath,
+		logger:  o.logger,
 	}
 
 	o.client.Transport = &ApiTransport{
@@ -87,10 +97,6 @@ func NewApiClient(ctx context.Context, host, username, password string, opts ...
 		logger: o.logger,
 		dumper: o.dumper,
 		api:    api,
-	}
-
-	if err := api.authenticate(ctx, o.logger); err != nil {
-		return nil, err
 	}
 
 	return api, nil
@@ -101,6 +107,8 @@ type ApiClient struct {
 	mu        sync.RWMutex
 	loginInfo *LoginInfo
 	config    *credentials
+	apiPath   string
+	logger    *slog.Logger
 }
 
 func (a *ApiClient) getLoginInfo() *LoginInfo {

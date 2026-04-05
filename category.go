@@ -54,7 +54,7 @@ func (c categoryWrapper) Swap(i, j int) {
 func (a *ApiClient) getCategories(ctx context.Context, categoryType CategoryType) ([]CategoryInterface, error) {
 	var categories []*category
 
-	if err := a.fetch(ctx, "get_"+string(categoryType)+"_categories", nil, playerApi, &categories); err != nil {
+	if err := a.fetch(ctx, "get_"+string(categoryType)+"_categories", nil, a.apiPath, &categories); err != nil {
 		return nil, err
 	}
 
