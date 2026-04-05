@@ -62,7 +62,7 @@ func (a *ApiClient) authenticate(ctx context.Context, logger *slog.Logger) error
 		expires := time.Unix(int64(info.UserInfo.ExpDate), 0)
 
 		if loc, err := time.LoadLocation(info.ServerInfo.Timezone); err == nil {
-			expires.In(loc)
+			expires = expires.In(loc)
 		}
 
 		logger.Debug(info.UserInfo.Message)
@@ -73,7 +73,7 @@ func (a *ApiClient) authenticate(ctx context.Context, logger *slog.Logger) error
 		return fmt.Errorf("user account not active")
 	}
 
-	a.loginInfo = info
+	a.setLoginInfo(info)
 
 	return nil
 }

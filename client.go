@@ -7,13 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"log/slog"
 )
 
 type contextKey string
-
-const loginInfoKey contextKey = "loginInfo"
 
 const (
 	playerApi string = "player_api.php"
@@ -51,7 +50,7 @@ func WithDumper(dumper io.Writer) Option {
 	}
 }
 
-func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, error) {
+func NewApiClient(ctx context.Context, host, username, password string, opts ...Option) (*ApiClient, error) {
 	uri, err := url.Parse(host)
 	if err != nil {
 		return nil, err
@@ -78,16 +77,19 @@ func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, 
 		password: password,
 	}
 
+	var api = &ApiClient{
+		client: o.client,
+		config: creds,
+	}
+
 	o.client.Transport = &ApiTransport{
 		inner:  transport,
 		logger: o.logger,
 		dumper: o.dumper,
-		config: creds,
+		api:    api,
 	}
 
-	var api = &ApiClient{client: o.client}
-
-	if err := api.authenticate(context.Background(), o.logger); err != nil {
+	if err := api.authenticate(ctx, o.logger); err != nil {
 		return nil, err
 	}
 
@@ -96,14 +98,24 @@ func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, 
 
 type ApiClient struct {
 	client    *http.Client
+	mu        sync.RWMutex
 	loginInfo *LoginInfo
+	config    *credentials
+}
+
+func (a *ApiClient) getLoginInfo() *LoginInfo {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.loginInfo
+}
+
+func (a *ApiClient) setLoginInfo(info *LoginInfo) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.loginInfo = info
 }
 
 func (a *ApiClient) fetch(ctx context.Context, action string, params map[string]string, path string, data any) error {
-
-	if a.loginInfo != nil {
-		ctx = context.WithValue(ctx, loginInfoKey, a.loginInfo)
-	}
 
 	request, err := http.NewRequestWithContext(ctx, "GET", path, nil)
 
@@ -118,6 +130,22 @@ func (a *ApiClient) fetch(ctx context.Context, action string, params map[string]
 	for k, v := range params {
 		query.Set(k, v)
 	}
+
+	loginInfo := a.getLoginInfo()
+	if loginInfo == nil {
+		query.Set("username", a.config.username)
+		query.Set("password", a.config.password)
+		request.URL.Scheme = a.config.host.Scheme
+		request.URL.Host = a.config.host.Host
+		request.URL.Path = a.config.host.Path + "/" + path
+	} else {
+		query.Set("username", loginInfo.UserInfo.Username)
+		query.Set("password", loginInfo.UserInfo.Password)
+		request.URL.Scheme = loginInfo.ServerInfo.ServerProtocol
+		request.URL.Host = loginInfo.ServerInfo.Url
+		request.URL.Path = "/" + path
+	}
+
 	request.URL.RawQuery = query.Encode()
 
 	response, err := a.client.Do(request)
@@ -139,13 +167,17 @@ func (a *ApiClient) fetch(ctx context.Context, action string, params map[string]
 }
 
 func (a *ApiClient) streamUrl(stream string, id int, extension string) string {
+	info := a.getLoginInfo()
+	if info == nil {
+		return ""
+	}
 	return fmt.Sprintf(
 		"%s://%s/%s/%s/%s/%d.%s",
-		a.loginInfo.ServerInfo.ServerProtocol,
-		a.loginInfo.ServerInfo.Url,
+		info.ServerInfo.ServerProtocol,
+		info.ServerInfo.Url,
 		stream,
-		a.loginInfo.UserInfo.Username,
-		a.loginInfo.UserInfo.Password,
+		info.UserInfo.Username,
+		info.UserInfo.Password,
 		id,
 		extension,
 	)
