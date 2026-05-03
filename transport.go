@@ -19,7 +19,7 @@ type ApiTransport struct {
 }
 
 func (t *ApiTransport) update(request *http.Request, stopwatch *stopwatch) *http.Request {
-	if nil != stopwatch {
+	if stopwatch != nil {
 		var ctx = httptrace.WithClientTrace(request.Context(), &httptrace.ClientTrace{
 			DNSStart: func(info httptrace.DNSStartInfo) {
 				stopwatch.GetEvent("dns").Start()
@@ -92,13 +92,13 @@ func (t *ApiTransport) RoundTrip(request *http.Request) (*http.Response, error) 
 
 	var timer *stopwatch
 
-	if nil != t.logger {
+	if t.logger != nil {
 		timer = &stopwatch{events: make(map[string]*stopwatchEvent)}
 	}
 
 	request = t.update(request, timer)
 
-	if nil != t.dumper {
+	if t.dumper != nil {
 		if out, err := httputil.DumpRequestOut(request, true); err == nil {
 			t.dump(out, "> ")
 		}
@@ -118,7 +118,7 @@ func (t *ApiTransport) RoundTrip(request *http.Request) (*http.Response, error) 
 		t.logger.Debug(fmt.Sprintf("%s %s %s %d", request.Method, t.getRequestUri(*request.URL), request.Proto, resp.StatusCode), args...)
 	}
 
-	if nil != t.dumper {
+	if t.dumper != nil {
 		if out, err := httputil.DumpResponse(resp, true); err == nil {
 			t.dump(out, "< ")
 		}

@@ -7,6 +7,8 @@ import (
 	"strconv"
 )
 
+var _ json.Unmarshaler = (*BackdropPath)(nil)
+
 type BackdropPath []string
 
 func (b *BackdropPath) UnmarshalJSON(data []byte) error {

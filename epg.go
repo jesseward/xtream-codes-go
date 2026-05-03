@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+var (
+	_ json.Unmarshaler = (*date)(nil)
+	_ json.Unmarshaler = (*base64string)(nil)
+)
+
 type date time.Time
 
 func (s *date) UnmarshalJSON(data []byte) error {
