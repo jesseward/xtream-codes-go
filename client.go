@@ -31,29 +31,39 @@ type options struct {
 	apiPath string
 }
 
-type Option func(*options)
+type Option func(*options) error
 
 func WithLogger(logger *slog.Logger) Option {
-	return func(o *options) {
+	return func(o *options) error {
 		o.logger = logger
+		return nil
 	}
 }
 
 func WithHTTPClient(client *http.Client) Option {
-	return func(o *options) {
+	return func(o *options) error {
+		if client == nil {
+			return fmt.Errorf("http client cannot be nil")
+		}
 		o.client = client
+		return nil
 	}
 }
 
 func WithDumper(dumper io.Writer) Option {
-	return func(o *options) {
+	return func(o *options) error {
 		o.dumper = dumper
+		return nil
 	}
 }
 
 func WithAPIPath(apiPath string) Option {
-	return func(o *options) {
+	return func(o *options) error {
+		if apiPath == "" {
+			return fmt.Errorf("apiPath cannot be empty")
+		}
 		o.apiPath = apiPath
+		return nil
 	}
 }
 
@@ -70,7 +80,9 @@ func NewApiClient(host, username, password string, opts ...Option) (*ApiClient, 
 	}
 
 	for _, opt := range opts {
-		opt(&o)
+		if err := opt(&o); err != nil {
+			return nil, fmt.Errorf("failed to apply option: %w", err)
+		}
 	}
 
 	var transport = o.client.Transport
@@ -179,14 +191,20 @@ func (a *ApiClient) streamUrl(stream string, id int, extension string) string {
 	if info == nil {
 		return ""
 	}
+
+	ext := ""
+	if extension != "" {
+		ext = "." + extension
+	}
+
 	return fmt.Sprintf(
-		"%s://%s/%s/%s/%s/%d.%s",
+		"%s://%s/%s/%s/%s/%d%s",
 		info.ServerInfo.ServerProtocol,
 		info.ServerInfo.Url,
 		stream,
 		info.UserInfo.Username,
 		info.UserInfo.Password,
 		id,
-		extension,
+		ext,
 	)
 }

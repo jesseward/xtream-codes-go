@@ -56,7 +56,7 @@ func (a *ApiClient) Connect(ctx context.Context) error {
 		return fmt.Errorf("failed to login: %w", err)
 	}
 
-	if nil != a.logger {
+	if a.logger != nil {
 
 		expires := time.Unix(int64(info.UserInfo.ExpDate), 0)
 

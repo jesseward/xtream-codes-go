@@ -9,6 +9,13 @@ import (
 	"strings"
 )
 
+var (
+	_ json.Unmarshaler = (*numeric)(nil)
+	_ json.Unmarshaler = (*boolean)(nil)
+	_ json.Unmarshaler = (*varchar)(nil)
+	_ json.Unmarshaler = (*float)(nil)
+)
+
 type ModelBase struct {
 	Num         int    `json:"num"`
 	Name        string `json:"name"`
